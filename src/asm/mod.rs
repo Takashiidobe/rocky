@@ -1,9 +1,11 @@
 mod disassembly;
 pub mod lexer;
 
+use miette::NamedSource;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
+use std::sync::Arc;
 
 pub use disassembly::{Disassembly, InstructionLine, ParseError};
 
@@ -17,8 +19,12 @@ pub fn objdump(object: &Path) -> Result<Disassembly, Error> {
         .arg(format!("--mcpu={GPU_ARCH}"))
         .arg(object))?;
     let path = object.with_extension("objdump");
-    fs::write(&path, &text).map_err(|source| Error::WriteFile { path, source })?;
-    let disassembly = disassembly::parse(text)?;
+    fs::write(&path, &text).map_err(|source| Error::WriteFile {
+        path: path.clone(),
+        source,
+    })?;
+    let disassembly =
+        disassembly::parse(Arc::new(NamedSource::new(path.display().to_string(), text)))?;
     if disassembly.instructions.is_empty() {
         return Err(Error::NoInstructions);
     }
@@ -32,11 +38,7 @@ pub fn print(disassembly: &Disassembly) {
             .iter()
             .filter(|symbol| symbol.address.value == instruction.address.value)
         {
-            println!(
-                "{:016x} <{}>:",
-                symbol.address.value,
-                &disassembly.source[symbol.name.clone()]
-            );
+            println!("{:016x} <{}>:", symbol.address.value, symbol.name.text());
         }
         let words = instruction
             .words
@@ -47,8 +49,8 @@ pub fn print(disassembly: &Disassembly) {
         println!(
             "  {:012x}: {:<24} {:<40} // {} ({} bytes)",
             instruction.address.value,
-            &disassembly.source[instruction.mnemonic_span()],
-            &disassembly.source[instruction.operands_span()],
+            instruction.mnemonic_span().text(),
+            instruction.operands_span().text(),
             words,
             instruction.size_bytes()
         );

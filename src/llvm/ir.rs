@@ -62,19 +62,19 @@ pub fn emit(instructions: Vec<Instruction>) -> Result<String, Error> {
                 rhs,
                 ..
             } => {
-                let lhs = match lhs.value {
+                let lhs = match lhs {
                     VectorSource::Register(register) => load_register(register, "lhs")?,
                     VectorSource::Immediate(value) => {
                         VectorType::const_vector(&[i32_type.const_int(value.into(), false); 32])
                     }
                 };
-                let rhs = load_register(rhs.value, "rhs")?;
+                let rhs = load_register(rhs, "rhs")?;
                 let comparison = builder.build_int_compare(IntPredicate::EQ, lhs, rhs, "equal")?;
                 let mask = builder
                     .build_bit_cast(comparison, i32_type, "mask")?
                     .into_int_value();
                 let active_mask = builder.build_and(mask, exec, "active_mask")?;
-                match destination.value {
+                match destination {
                     MaskRegister::VccLo => {
                         builder.build_store(vcc_lo, active_mask)?;
                     }

@@ -24,9 +24,9 @@ pub enum Error {
     #[error("LLVM IR verification failed: {message}")]
     #[diagnostic(code(rocky::ir_verification))]
     IrVerification { message: String },
-    #[error("disassembly contains no v_cmp_eq_u32_e32 instruction to lift")]
-    #[diagnostic(code(rocky::no_compare))]
-    NoCompare,
+    #[error("disassembly contains no supported instructions to lift")]
+    #[diagnostic(code(rocky::no_supported_instructions))]
+    NoSupportedInstructions,
     #[error("could not execute {program:?}")]
     #[diagnostic(
         code(rocky::tool_io),
@@ -100,7 +100,7 @@ pub enum Error {
     )]
     HipTarget { arch: String, targets: Vec<String> },
     #[error("unexpected argument {argument:?}")]
-    #[diagnostic(code(rocky::usage), help("Usage: rocky [kernel.hip]"))]
+    #[diagnostic(code(rocky::usage), help("Usage: rocky [--strict] [kernel.hip]"))]
     Usage { argument: OsString },
     #[error(transparent)]
     #[diagnostic(transparent)]

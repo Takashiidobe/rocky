@@ -1,14 +1,6 @@
-use std::ops::Range;
-
 use logos::Logos;
 
-pub type Span = Range<usize>;
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct Spanned<T> {
-    pub value: T,
-    pub span: Span,
-}
+use crate::span::{Location, Source, Span};
 
 #[derive(Logos, Debug, Clone, Copy, PartialEq, Eq)]
 #[logos(skip r"\s+")]
@@ -37,13 +29,16 @@ pub enum Token {
     Punctuation,
 }
 
-pub fn tokenize(text: &str, offset: usize) -> Result<Vec<Spanned<Token>>, Span> {
+pub fn tokenize(text: &str, offset: usize, source: &Source) -> Result<Vec<Span<Token>>, Location> {
     Token::lexer(text)
         .spanned()
         .map(|(token, span)| {
-            let span = span.start + offset..span.end + offset;
+            let span = Location {
+                source: source.clone(),
+                range: span.start + offset..span.end + offset,
+            };
             token
-                .map(|value| Spanned {
+                .map(|value| Span {
                     value,
                     span: span.clone(),
                 })

@@ -1,10 +1,11 @@
-use miette::{Diagnostic, NamedSource, SourceSpan};
+use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
 use super::register::{MaskRegister, VectorRegister};
-use crate::asm::lexer::{Span, Spanned, Token};
+use crate::asm::lexer::Token;
 use crate::asm::{Disassembly, InstructionLine};
 use crate::error::Error;
+use crate::span::{Location, Source, Span};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum VectorSource {
@@ -15,11 +16,10 @@ pub enum VectorSource {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Instruction {
     VCmpEqU32 {
-        span: Span,
-        address: Spanned<u64>,
-        destination: Spanned<MaskRegister>,
-        lhs: Spanned<VectorSource>,
-        rhs: Spanned<VectorRegister>,
+        address: u64,
+        destination: MaskRegister,
+        lhs: VectorSource,
+        rhs: VectorRegister,
     },
 }
 
@@ -35,83 +35,108 @@ fn immediate(text: &str) -> Option<u32> {
 }
 
 fn parse_instruction(
-    disassembly: &Disassembly,
-    instruction: &InstructionLine,
-) -> Result<Instruction, InstructionError> {
-    let text = &disassembly.source;
-    let error = |kind, span: Span| InstructionError {
-        source_text: NamedSource::new("llvm-objdump output", text.clone()),
+    instruction: &Span<InstructionLine>,
+) -> Result<Span<Instruction>, InstructionError> {
+    let error = |kind, span: Location| InstructionError {
+        source_text: span.source.clone(),
         span: span.into(),
         kind,
     };
-    let mnemonic = &text[instruction.mnemonic_span()];
+    let mnemonic_span = instruction.mnemonic_span();
+    let mnemonic = mnemonic_span.text();
     if mnemonic != "v_cmp_eq_u32_e32" {
         return Err(error(
             InstructionErrorKind::UnsupportedInstruction {
-                mnemonic: mnemonic.into(),
+                reason: format!("unsupported mnemonic {mnemonic}"),
             },
             instruction.mnemonic_span(),
         ));
     }
     let [destination, comma1, lhs, comma2, rhs] = instruction.operand_tokens() else {
         return Err(error(
-            InstructionErrorKind::OperandFormat,
+            InstructionErrorKind::UnsupportedInstruction {
+                reason: "expected three operands separated by commas".into(),
+            },
             instruction.operands_span(),
         ));
     };
     for comma in [comma1, comma2] {
         if comma.value != Token::Comma {
             return Err(error(
-                InstructionErrorKind::OperandFormat,
+                InstructionErrorKind::UnsupportedInstruction {
+                    reason: "expected three operands separated by commas".into(),
+                },
                 comma.span.clone(),
             ));
         }
     }
-    if &text[destination.span.clone()] != "vcc_lo" {
+    if destination.span.text() != "vcc_lo" {
         return Err(error(
-            InstructionErrorKind::MaskRegister,
+            InstructionErrorKind::UnsupportedInstruction {
+                reason: "expected wave32 mask register vcc_lo".into(),
+            },
             destination.span.clone(),
         ));
     }
-    let lhs_text = &text[lhs.span.clone()];
+    let lhs_text = lhs.span.text();
     let lhs_value = VectorRegister::parse(lhs_text)
         .map(VectorSource::Register)
         .or_else(|| immediate(lhs_text).map(VectorSource::Immediate))
-        .ok_or_else(|| error(InstructionErrorKind::SourceOperand, lhs.span.clone()))?;
-    let rhs_value = VectorRegister::parse(&text[rhs.span.clone()])
-        .ok_or_else(|| error(InstructionErrorKind::VectorRegister, rhs.span.clone()))?;
-    Ok(Instruction::VCmpEqU32 {
+        .ok_or_else(|| {
+            error(
+                InstructionErrorKind::UnsupportedInstruction {
+                    reason: "expected numbered vector register or 32-bit decimal/hex integer"
+                        .into(),
+                },
+                lhs.span.clone(),
+            )
+        })?;
+    let rhs_value = VectorRegister::parse(rhs.span.text()).ok_or_else(|| {
+        error(
+            InstructionErrorKind::UnsupportedInstruction {
+                reason: "expected numbered vector register v0 through v255".into(),
+            },
+            rhs.span.clone(),
+        )
+    })?;
+    Ok(Span {
         span: instruction.span.clone(),
-        address: Spanned {
-            value: instruction.address.value,
-            span: instruction.address.span.clone(),
-        },
-        destination: Spanned {
-            value: MaskRegister::VccLo,
-            span: destination.span.clone(),
-        },
-        lhs: Spanned {
-            value: lhs_value,
-            span: lhs.span.clone(),
-        },
-        rhs: Spanned {
-            value: rhs_value,
-            span: rhs.span.clone(),
+        value: Instruction::VCmpEqU32 {
+            address: instruction.address.value,
+            destination: MaskRegister::VccLo,
+            lhs: lhs_value,
+            rhs: rhs_value,
         },
     })
 }
 
-pub fn from_disassembly(disassembly: &Disassembly) -> Result<Vec<Instruction>, Error> {
-    let instruction = disassembly
-        .instructions
-        .iter()
-        .find(|instruction| &disassembly.source[instruction.mnemonic_span()] == "v_cmp_eq_u32_e32")
-        .ok_or(Error::NoCompare)?;
-    Ok(vec![parse_instruction(disassembly, instruction)?])
+pub fn from_disassembly(
+    disassembly: &Disassembly,
+    strict: bool,
+) -> Result<Vec<Instruction>, Error> {
+    let mut instructions = Vec::new();
+    for instruction in &disassembly.instructions {
+        match parse_instruction(instruction) {
+            Ok(instruction) => instructions.push(instruction.into_inner()),
+            Err(error) if strict => return Err(error.into()),
+            Err(error) => match error.kind {
+                InstructionErrorKind::UnsupportedInstruction { reason } => {
+                    eprintln!(
+                        "skipped instruction {}: {reason}",
+                        instruction.mnemonic_span().text()
+                    );
+                }
+            },
+        }
+    }
+    if instructions.is_empty() {
+        return Err(Error::NoSupportedInstructions);
+    }
+    Ok(instructions)
 }
 
 #[derive(Debug, Error, Diagnostic)]
-#[error("cannot parse instruction")]
+#[error("unsupported instruction")]
 #[diagnostic(
     code(rocky::instruction),
     help(
@@ -120,7 +145,7 @@ pub fn from_disassembly(disassembly: &Disassembly) -> Result<Vec<Instruction>, E
 )]
 pub struct InstructionError {
     #[source_code]
-    source_text: NamedSource<String>,
+    source_text: Source,
     #[label("{kind}")]
     span: SourceSpan,
     #[source]
@@ -129,14 +154,6 @@ pub struct InstructionError {
 
 #[derive(Debug, Error)]
 enum InstructionErrorKind {
-    #[error("unsupported instruction {mnemonic}")]
-    UnsupportedInstruction { mnemonic: String },
-    #[error("expected three operands separated by commas")]
-    OperandFormat,
-    #[error("expected wave32 mask register vcc_lo")]
-    MaskRegister,
-    #[error("expected numbered vector register v0 through v255")]
-    VectorRegister,
-    #[error("expected numbered vector register or 32-bit decimal/hex integer")]
-    SourceOperand,
+    #[error("{reason}")]
+    UnsupportedInstruction { reason: String },
 }
