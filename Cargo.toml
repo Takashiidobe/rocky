@@ -4,7 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "5718b632ae689376f74ddfb4ff804a90eb7319f0", version = "0.10.0", default-features = false, features = ["llvm23-1-prefer-dynamic"] }
+llvm-amdgpu-types = "0.1.1"
+inkwell = { git = "https://github.com/TheDan64/inkwell.git", rev = "5718b632ae689376f74ddfb4ff804a90eb7319f0", version = "0.10.0", default-features = false, features = [
+  "llvm23-1-prefer-dynamic",
+] }
 logos = "0.16.1"
 miette = { version = "7", features = ["fancy"] }
 thiserror = "2"

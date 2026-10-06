@@ -257,6 +257,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47d9d19d1d6efa0109d2f65ff4c85cddd50bd572e5a00127ab10987290bcefae"
 
 [[package]]
+name = "llvm-amdgpu-types"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e86d19c1e4b33a6277eb5470f9584e499cf29a110e55cb1a866ab1f4afaf217e"
+
+[[package]]
 name = "llvm-sys"
 version = "231.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -419,6 +425,7 @@ name = "rocky"
 version = "0.1.0"
 dependencies = [
  "inkwell",
+ "llvm-amdgpu-types",
  "logos",
  "miette",
  "thiserror",

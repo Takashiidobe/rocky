@@ -19,6 +19,12 @@ impl InstructionLine {
         self.words.len() * 4
     }
 
+    pub fn assembly_span(&self) -> Location {
+        self.tokens[0]
+            .span
+            .through(&self.tokens[self.assembly_len - 1].span)
+    }
+
     pub fn mnemonic_span(&self) -> Location {
         self.tokens[0].span.clone()
     }

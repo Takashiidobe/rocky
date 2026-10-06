@@ -3,8 +3,8 @@ use inkwell::{
 };
 
 use super::instruction::{Instruction, VectorSource};
-use super::register::{MaskRegister, VectorRegister};
 use crate::error::Error;
+use llvm_amdgpu_types::{U32, VectorRegister};
 
 pub fn emit(instructions: Vec<Instruction>) -> Result<String, Error> {
     if instructions.is_empty() {
@@ -37,7 +37,7 @@ pub fn emit(instructions: Vec<Instruction>) -> Result<String, Error> {
     exec.set_name("exec");
     vcc_lo.set_name("vcc_lo");
     builder.position_at_end(context.append_basic_block(function, "entry"));
-    let load_register = |register: VectorRegister, name| {
+    let load_register = |register: VectorRegister<U32>, name| {
         let slot = unsafe {
             builder.build_gep(
                 wave_type,
@@ -56,12 +56,7 @@ pub fn emit(instructions: Vec<Instruction>) -> Result<String, Error> {
     };
     for instruction in instructions {
         match instruction {
-            Instruction::VCmpEqU32 {
-                destination,
-                lhs,
-                rhs,
-                ..
-            } => {
+            Instruction::VCmpEqU32 { lhs, rhs, .. } => {
                 let lhs = match lhs {
                     VectorSource::Register(register) => load_register(register, "lhs")?,
                     VectorSource::Immediate(value) => {
@@ -74,11 +69,7 @@ pub fn emit(instructions: Vec<Instruction>) -> Result<String, Error> {
                     .build_bit_cast(comparison, i32_type, "mask")?
                     .into_int_value();
                 let active_mask = builder.build_and(mask, exec, "active_mask")?;
-                match destination {
-                    MaskRegister::VccLo => {
-                        builder.build_store(vcc_lo, active_mask)?;
-                    }
-                }
+                builder.build_store(vcc_lo, active_mask)?;
             }
         }
     }
