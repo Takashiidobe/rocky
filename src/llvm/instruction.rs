@@ -18,6 +18,7 @@ pub enum VectorSource {
     Immediate(u32),
 }
 
+// Not sure all of these make sense with just LHS RHS
 #[derive(Debug, PartialEq, Eq)]
 pub enum Instruction {
     VAndB32E32 {
@@ -32,9 +33,33 @@ pub enum Instruction {
         lhs: ScalarSource,
         rhs: ScalarSource,
     },
+    SXorB32 {
+        lhs: ScalarRegister,
+        rhs: ScalarSource,
+    },
+    VMulU32U24E32 {
+        lhs: VectorSource,
+        rhs: VectorRegister<U32>,
+    },
+    SAndn2saveexecB32 {
+        lhs: ScalarSource,
+        rhs: ScalarSource,
+    },
+    VLshlrevB32E32 {
+        lhs: VectorSource,
+        rhs: VectorRegister<U32>,
+    },
+    // e.g. this is a dest and offset, not really rhs lhs
+    SLoadDwordx2 {
+       lhs: ScalarRegister,
+       rhs: ScalarSource
+    }
+    SWaitcnt,
+    // e.g. this takes 4 args.  How do you want to handle this?
+    GlobalStoreDword {
+        
+    }
     SCodeEnd
-    //TODO: 
-    // Add the rest of the instructions
 }
 
 fn parse_instruction(line: &Span<InstructionLine>) -> Result<Span<Instruction>, InstructionError> {
