@@ -258,9 +258,9 @@ checksum = "47d9d19d1d6efa0109d2f65ff4c85cddd50bd572e5a00127ab10987290bcefae"
 
 [[package]]
 name = "llvm-amdgpu-types"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4834163c4d5975120db3adf5f7672c6e48b5ee0b6b7af4e4af79c1b4bdb9179"
+checksum = "724e38d4f588004c83c3152e4553c2b0c657566d379d567b3d95f03924027851"
 
 [[package]]
 name = "llvm-sys"
