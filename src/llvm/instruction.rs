@@ -1,10 +1,16 @@
-use llvm_amdgpu_types::{DecodedInstruction, SourceOperand, U32, VectorRegister};
+use llvm_amdgpu_types::{DecodedInstruction, SourceOperand, U32, ScalarRegister, VectorRegister};
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
 use crate::asm::{Disassembly, InstructionLine};
 use crate::error::Error;
 use crate::span::{Location, Source, Span};
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ScalarSource {
+    Register(ScalarRegister<U32>),
+    Immediate(u32),
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum VectorSource {
@@ -14,10 +20,21 @@ pub enum VectorSource {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Instruction {
+    VAndB32E32 {
+        lhs: VectorSource,
+        rhs: VectorRegister<U32>,
+    },
     VCmpEqU32 {
         lhs: VectorSource,
         rhs: VectorRegister<U32>,
     },
+    SAndSaveexecB32 {
+        lhs: ScalarSource,
+        rhs: ScalarSource,
+    },
+    SCodeEnd
+    //TODO: 
+    // Add the rest of the instructions
 }
 
 fn parse_instruction(line: &Span<InstructionLine>) -> Result<Span<Instruction>, InstructionError> {

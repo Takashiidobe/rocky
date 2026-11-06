@@ -6,6 +6,9 @@ use super::instruction::{Instruction, VectorSource};
 use crate::error::Error;
 use llvm_amdgpu_types::{U32, VectorRegister};
 
+
+// TODO:
+// Add remaining instructions 
 pub fn emit(instructions: Vec<Instruction>) -> Result<String, Error> {
     if instructions.is_empty() {
         return Err(Error::IrConstruction {
