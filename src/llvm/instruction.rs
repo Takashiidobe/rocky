@@ -11,55 +11,49 @@ use crate::span::{Location, Source, Span};
 use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum ScalarSourceU32 {
-    Register(ScalarRegister<U32>),
+pub enum ScalarSource<T: OperandType> {
+    Register(ScalarRegister<T>),
     Immediate(u32),
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum ScalarSourceB32 {
-    Register(ScalarRegister<B32>),
+pub enum VectorSource<T: OperandType> {
+    Register(VectorRegister<T>),
     Immediate(u32),
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum VectorSourceU32 {
-    Register(VectorRegister<U32>),
-    Immediate(u32),
-}
-
-// Not sure all of these make sense with just LHS RHS
+/// The Instructions we currently parse.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Instruction {
     VAndB32E32 {
         dest: VectorRegister<U32>,
-        lhs: VectorSourceU32,
+        lhs: VectorSource<U32>,
         rhs: VectorRegister<U32>,
     },
     VCmpEqU32 {
-        lhs: VectorSourceU32,
+        lhs: VectorSource<U32>,
         rhs: VectorRegister<U32>,
     },
     SAndSaveexecB32 {
-        src: ScalarSourceB32,
-        dest: ScalarSourceB32,
+        src: ScalarSource<B32>,
+        dest: ScalarSource<B32>,
     },
     SXorB32 {
         lhs: ScalarRegister<U32>,
-        rhs: ScalarSourceU32,
+        rhs: ScalarSource<U32>,
     },
     VMulU32U24E32 {
         dest: VectorRegister<U32>,
-        lhs: VectorSourceU32,
+        lhs: VectorSource<U32>,
         rhs: VectorRegister<U32>,
     },
     SAndn2saveexecB32 {
-        lhs: ScalarSourceU32,
-        rhs: ScalarSourceU32,
+        lhs: ScalarSource<U32>,
+        rhs: ScalarSource<U32>,
     },
     VLshlrevB32E32 {
         dest: VectorRegister<U32>,
-        lhs: VectorSourceU32,
+        lhs: VectorSource<U32>,
         rhs: VectorRegister<U32>,
     },
     SLoadDwordx2 {
@@ -93,11 +87,12 @@ fn parse_instruction(line: &Span<InstructionLine>) -> Result<Span<Instruction>, 
         DecodedInstruction::SAndSaveexecB32(instruction) => {
             let (src, dest) = match instruction.src0() {
                 ScalarSourceOperand::Register(lhs) => {
-                    (ScalarSourceB32::Register(lhs), instruction.destination())
+                    (ScalarSource::Register(lhs), instruction.destination())
                 }
-                ScalarSourceOperand::Immediate(lhs) => {
-                    (ScalarSourceB32::Register(lhs), instruction.destination())
-                }
+                ScalarSourceOperand::Immediate(lhs) => (
+                    ScalarSource::Immediate(lhs.value()),
+                    instruction.destination(),
+                ),
                 _ => {
                     return Err(InstructionError::new(
                         "only vector registers and immediates are lifted for src0",
@@ -108,7 +103,7 @@ fn parse_instruction(line: &Span<InstructionLine>) -> Result<Span<Instruction>, 
             Ok(Span {
                 value: Instruction::SAndSaveexecB32 {
                     src,
-                    dest: ScalarSourceB32::Register(dest),
+                    dest: ScalarSource::Register(dest),
                 },
                 span: line.span.clone(),
             })
@@ -116,10 +111,10 @@ fn parse_instruction(line: &Span<InstructionLine>) -> Result<Span<Instruction>, 
         DecodedInstruction::VCmpEqU32E32(instruction) => {
             let (lhs, rhs) = match instruction.src0() {
                 SourceOperand::VectorRegister(lhs) => {
-                    (VectorSourceU32::Register(lhs), instruction.src1())
+                    (VectorSource::Register(lhs), instruction.src1())
                 }
                 SourceOperand::Immediate(lhs) => {
-                    (VectorSourceU32::Immediate(lhs.value()), instruction.src1())
+                    (VectorSource::Immediate(lhs.value()), instruction.src1())
                 }
                 _ => {
                     return Err(InstructionError::new(
@@ -166,9 +161,7 @@ pub fn from_disassembly(
 #[error("unsupported instruction")]
 #[diagnostic(
     code(rocky::instruction),
-    help(
-        "The lifter supports wave32 v_cmp_eq_u32_e32 with vector-register or integer src0 and vector-register src1."
-    )
+    help("The lifter doesn't support instruction: {source_text:?}")
 )]
 pub struct InstructionError {
     #[source_code]
