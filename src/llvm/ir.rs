@@ -6,9 +6,8 @@ use super::instruction::{Instruction, VectorSource};
 use crate::error::Error;
 use llvm_amdgpu_types::{U32, VectorRegister};
 
-
 // TODO:
-// Add remaining instructions 
+// Add remaining instructions
 pub fn emit(instructions: Vec<Instruction>) -> Result<String, Error> {
     if instructions.is_empty() {
         return Err(Error::IrConstruction {
@@ -73,6 +72,11 @@ pub fn emit(instructions: Vec<Instruction>) -> Result<String, Error> {
                     .into_int_value();
                 let active_mask = builder.build_and(mask, exec, "active_mask")?;
                 builder.build_store(vcc_lo, active_mask)?;
+            }
+            _ => {
+                return Err(Error::IrConstruction {
+                    message: "instruction is not yet supported by the LLVM emitter".into(),
+                });
             }
         }
     }
