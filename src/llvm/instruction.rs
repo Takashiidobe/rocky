@@ -22,6 +22,7 @@ pub enum VectorSource {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Instruction {
     VAndB32E32 {
+        dest: VectorRegister<U32>,
         lhs: VectorSource,
         rhs: VectorRegister<U32>,
     },
@@ -34,10 +35,11 @@ pub enum Instruction {
         rhs: ScalarSource,
     },
     SXorB32 {
-        lhs: ScalarRegister,
+        lhs: ScalarRegister<U32>,
         rhs: ScalarSource,
     },
     VMulU32U24E32 {
+        dest: VectorRegister<U32>,
         lhs: VectorSource,
         rhs: VectorRegister<U32>,
     },
@@ -46,19 +48,22 @@ pub enum Instruction {
         rhs: ScalarSource,
     },
     VLshlrevB32E32 {
+        dest: VectorRegister<U32>,
         lhs: VectorSource,
         rhs: VectorRegister<U32>,
     },
-    // e.g. this is a dest and offset, not really rhs lhs
     SLoadDwordx2 {
-       lhs: ScalarRegister,
-       rhs: ScalarSource
-    }
+        dest: ScalarRegister<U32>,
+        base: Option<ScalarRegister<U32>>,
+        offset: Option<U32>,
+    },
     SWaitcnt,
-    // e.g. this takes 4 args.  How do you want to handle this?
     GlobalStoreDword {
-        
-    }
+        vaddr: VectorRegister<U32>,
+        data: VectorRegister<U32>,
+        saddr: ScalarRegister<U32>,
+        offset: Option<i32>
+    },
     SCodeEnd
 }
 
