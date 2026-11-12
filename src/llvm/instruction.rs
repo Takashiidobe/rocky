@@ -1,19 +1,29 @@
-use llvm_amdgpu_types::{DecodedInstruction, SourceOperand, U32, ScalarRegister, VectorRegister};
+use llvm_amdgpu_types::{
+    B32, DecodedInstruction, OperandType, ScalarRegister, ScalarSourceOperand, SourceOperand, U32,
+    VectorRegister,
+};
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
 use crate::asm::{Disassembly, InstructionLine};
 use crate::error::Error;
 use crate::span::{Location, Source, Span};
+use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum ScalarSource {
+pub enum ScalarSourceU32 {
     Register(ScalarRegister<U32>),
     Immediate(u32),
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum VectorSource {
+pub enum ScalarSourceB32 {
+    Register(ScalarRegister<B32>),
+    Immediate(u32),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum VectorSourceU32 {
     Register(VectorRegister<U32>),
     Immediate(u32),
 }
@@ -23,33 +33,33 @@ pub enum VectorSource {
 pub enum Instruction {
     VAndB32E32 {
         dest: VectorRegister<U32>,
-        lhs: VectorSource,
+        lhs: VectorSourceU32,
         rhs: VectorRegister<U32>,
     },
     VCmpEqU32 {
-        lhs: VectorSource,
+        lhs: VectorSourceU32,
         rhs: VectorRegister<U32>,
     },
     SAndSaveexecB32 {
-        lhs: ScalarSource,
-        rhs: ScalarSource,
+        src: ScalarSourceB32,
+        dest: ScalarSourceB32,
     },
     SXorB32 {
         lhs: ScalarRegister<U32>,
-        rhs: ScalarSource,
+        rhs: ScalarSourceU32,
     },
     VMulU32U24E32 {
         dest: VectorRegister<U32>,
-        lhs: VectorSource,
+        lhs: VectorSourceU32,
         rhs: VectorRegister<U32>,
     },
     SAndn2saveexecB32 {
-        lhs: ScalarSource,
-        rhs: ScalarSource,
+        lhs: ScalarSourceU32,
+        rhs: ScalarSourceU32,
     },
     VLshlrevB32E32 {
         dest: VectorRegister<U32>,
-        lhs: VectorSource,
+        lhs: VectorSourceU32,
         rhs: VectorRegister<U32>,
     },
     SLoadDwordx2 {
@@ -62,9 +72,9 @@ pub enum Instruction {
         vaddr: VectorRegister<U32>,
         data: VectorRegister<U32>,
         saddr: ScalarRegister<U32>,
-        offset: Option<i32>
+        offset: Option<i32>,
     },
-    SCodeEnd
+    SCodeEnd,
 }
 
 fn parse_instruction(line: &Span<InstructionLine>) -> Result<Span<Instruction>, InstructionError> {
@@ -79,30 +89,55 @@ fn parse_instruction(line: &Span<InstructionLine>) -> Result<Span<Instruction>, 
             },
         )
     })?;
-    let (lhs, rhs) = match decoded {
-        DecodedInstruction::VCmpEqU32E32(instruction) => match instruction.src0() {
-            SourceOperand::VectorRegister(lhs) => (VectorSource::Register(lhs), instruction.src1()),
-            SourceOperand::Immediate(lhs) => {
-                (VectorSource::Immediate(lhs.value()), instruction.src1())
-            }
-            _ => {
-                return Err(InstructionError::new(
-                    "only vector registers and immediates are lifted for src0",
-                    line.operands_span(),
-                ));
-            }
-        },
-        _ => {
-            return Err(InstructionError::new(
-                "instruction is not supported by the LLVM lifter",
-                location,
-            ));
+    match decoded {
+        DecodedInstruction::SAndSaveexecB32(instruction) => {
+            let (src, dest) = match instruction.src0() {
+                ScalarSourceOperand::Register(lhs) => {
+                    (ScalarSourceB32::Register(lhs), instruction.destination())
+                }
+                ScalarSourceOperand::Immediate(lhs) => {
+                    (ScalarSourceB32::Register(lhs), instruction.destination())
+                }
+                _ => {
+                    return Err(InstructionError::new(
+                        "only vector registers and immediates are lifted for src0",
+                        line.operands_span(),
+                    ));
+                }
+            };
+            Ok(Span {
+                value: Instruction::SAndSaveexecB32 {
+                    src,
+                    dest: ScalarSourceB32::Register(dest),
+                },
+                span: line.span.clone(),
+            })
         }
-    };
-    Ok(Span {
-        value: Instruction::VCmpEqU32 { lhs, rhs },
-        span: line.span.clone(),
-    })
+        DecodedInstruction::VCmpEqU32E32(instruction) => {
+            let (lhs, rhs) = match instruction.src0() {
+                SourceOperand::VectorRegister(lhs) => {
+                    (VectorSourceU32::Register(lhs), instruction.src1())
+                }
+                SourceOperand::Immediate(lhs) => {
+                    (VectorSourceU32::Immediate(lhs.value()), instruction.src1())
+                }
+                _ => {
+                    return Err(InstructionError::new(
+                        "only vector registers and immediates are lifted for src0",
+                        line.operands_span(),
+                    ));
+                }
+            };
+            Ok(Span {
+                value: Instruction::VCmpEqU32 { lhs, rhs },
+                span: line.span.clone(),
+            })
+        }
+        _ => Err(InstructionError::new(
+            "instruction is not supported by the LLVM lifter",
+            location,
+        )),
+    }
 }
 
 pub fn from_disassembly(
