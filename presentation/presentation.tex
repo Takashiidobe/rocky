@@ -69,22 +69,30 @@
     \begin{frame}{Motivation}
         \begin{itemize}
             \item Divergence comes at a heavy cost
-
+            % Notes:
+                % In short, we want to understand control flow and how divergence can be modelled
+                % Probably need to mention something about the RE motivation of this work
+                % Like the real point of this is to make open sourcing AI libraries easier
         \end{itemize}
 	\end{frame}
 
     \begin{frame}{Design}
-        
+            % Probably gonna need some help on this one, but the general idea is that we disas
+            % a HIP binary with objdump, then work on the disassembled assembly to lift them to LLVM
+            % Next, we generate a control flow structured data (like a csv) from the LLVM and generate
+            % A chart with python detailing the control flow diagram
     \end{frame}
 
 
     \begin{frame}{Implementation}
-
+            % Done in rust with LLVM libraries and existing code from similar project
+            % Show instruction enum and parsing work
 	\end{frame}
 
 
     \begin{frame}{Evaluation}
-
+            % I guess discuss runtime and how well the graph comes out
+            % Point is really that we were able to do this at all as for real use cases, this is actually important
 	\end{frame}
 
 
@@ -94,17 +102,22 @@
 
 
     \begin{frame}{Discussion}
-
+            % It worked! I guess
+            % From an algorithmic perspective, this is not a trivial problem, especially for more complex ifs
+            % This could be called an integral step in making GPU code more cross-platform
 
 	\end{frame}
 
 
     \begin{frame}{Limitations}
-
+            % Only tested on a very simple test case.  We could in theory do more fuzzing or something idk
+            % But the point is, this is quite limted
 	\end{frame}
 
      \begin{frame}{Conclusion}
-
+            % We got it i guess.
+            % Future work would be supporting more complex control flow, and probably making a more robust
+            % Way of listing/parsing instructions as this is incredibly time consuming and ad hoc
 	\end{frame}
 
 \end{document}
