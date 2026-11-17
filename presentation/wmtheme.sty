@@ -1,0 +1,117 @@
+% wmtheme.sty -- William & Mary inspired Beamer style
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{wmtheme}[2026/10/29 William & Mary style for Beamer]
+
+\RequirePackage{tikz}
+\RequirePackage{xcolor}
+\RequirePackage{graphicx}
+
+% ---------- Colours ----------
+\definecolor{wmcorner}{HTML}{224A0F}  % deep green of the title-slide corner
+\definecolor{wmgreen}{HTML}{115740}   % W&M green
+\definecolor{wmgold}{HTML}{B59555}   % gold
+\definecolor{wmgrey}{HTML}{F1F1F1}   % light grey title boxes
+
+% ---------- General look ----------
+\setbeamertemplate{navigation symbols}{}
+\usefonttheme{professionalfonts}
+\renewcommand{\familydefault}{\sfdefault}
+\setbeamercolor{normal text}{fg=black,bg=white}
+\setbeamercolor{structure}{fg=wmgreen}
+\setbeamercolor{itemize item}{fg=wmgold}
+\setbeamercolor{itemize subitem}{fg=wmgold}
+\setbeamercolor{enumerate item}{fg=wmgreen}
+\setbeamertemplate{itemize item}[triangle]
+\setbeamertemplate{itemize subitem}[triangle]
+\setbeamertemplate{enumerate item}[default]
+\setbeamerfont{frametitle}{series=\bfseries,size=\Large}
+\setbeamersize{text margin left=1.6cm,text margin right=1.0cm}
+
+% ---------- Logo (overridable) ----------
+\newcommand{\wmlogo}{%
+  \IfFileExists{images/wm-logo.png}{\includegraphics[height=2.4cm]{images/wm-logo.png}}{%
+  \IfFileExists{images/wm-logo.pdf}{\includegraphics[height=2.4cm]{images/wm-logo.pdf}}{%
+  \IfFileExists{images/wm-logo.jpg}{\includegraphics[height=2.4cm]{images/wm-logo.jpg}}{%
+    \rmfamily
+    \begin{tabular}{c}\textcolor{wmgold}{\Huge $\mathcal{W\!M}$}\\[2pt]
+    \textcolor{wmgreen}{\Huge\textsc{William}}\\
+    \textcolor{wmgreen}{\Huge\textsc{\& Mary}}\end{tabular}}}}%
+}
+
+% ---------- Remember which frame is the title slide ----------
+\newcommand{\wm@titleframe}{0}
+
+% ---------- Background: green/gold lines with a bend down the left ----------
+% Tune the bend with these three numbers (all in cm):
+\newcommand{\wmBendY}{4.5}      % how far down the page the bend starts (about halfway)
+\newcommand{\wmBendDrop}{1}     % how far the lines drop while shifting right
+\newcommand{\wmBendShift}{0.6}  % how far right the lines shift
+% Lines: x-position / thickness / colour.  The FIRST entry is the reference
+% line; the bend height of the others is computed so that every line stays
+% the same perpendicular distance from its neighbours, even on the diagonal.
+\setbeamertemplate{background}{%
+  \ifnum\value{framenumber}=\wm@titleframe\relax\else
+  \vbox to \paperheight{%
+    \hbox to \paperwidth{%
+      \begin{tikzpicture}[x=1cm,y=1cm]
+        \useasboundingbox (0,0) rectangle (\paperwidth,-\paperheight);
+        \foreach \x/\w/\c in {0.45/2.6pt/wmgreen,
+                              0.72/1.6pt/wmgold,
+                              0.90/0.8pt/wmgreen}{
+          % bend height for a true parallel offset of (\x - 0.45) from the reference line
+          \pgfmathsetmacro{\wmyb}{-\wmBendY
+            + (\x-0.45)*(sqrt(\wmBendShift*\wmBendShift+\wmBendDrop*\wmBendDrop)-\wmBendDrop)/\wmBendShift}
+          \draw[\c,line width=\w,line join=miter,line cap=butt]
+            (\x,0)
+            -- (\x,\wmyb)
+            -- ({\x+\wmBendShift},{\wmyb-\wmBendDrop})
+            -- ({\x+\wmBendShift},-\paperheight);
+        }
+      \end{tikzpicture}\hfil}%
+    \vss}%
+  \fi
+}
+
+% ---------- Frame title: grey rounded box + small gold underline ----------
+\setbeamertemplate{frametitle}{%
+  \nointerlineskip
+  \vskip 0.30cm
+  \begin{tikzpicture}
+    \node[anchor=north west,
+         fill=wmgrey, rounded corners=10pt,
+         text=black, align=left,
+         text width=\dimexpr\textwidth-1.2em\relax,
+         inner xsep=0.6em, inner ysep=0.45em,
+         minimum height=1.1cm, text depth=0.25ex] (wm@box) at (0,0)
+      {\usebeamerfont{frametitle}\insertframetitle\par};
+    \draw[wmgold, line width=2.5pt, line cap=round]
+      ([xshift=0.3cm,yshift=-5pt]wm@box.south west) -- ++(2.6cm,0);
+  \end{tikzpicture}\par
+}
+
+% ---------- Title page ----------
+\setbeamertemplate{title page}{%
+  \xdef\wm@titleframe{\the\value{framenumber}}%
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[wmcorner] (current page.north west) -- ++(2.4cm,0) -- ++(-2.4cm,-2.4cm) -- cycle;
+    \fill[wmgold]   ([xshift=2.4cm]current page.north west) -- ++(0.9cm,0)
+                    -- ++(-3.3cm,-3.3cm) -- ++(0,0.9cm) -- cycle;
+    \node[fill=wmgrey, rounded corners=14pt, text=black, align=center,
+         text width=8.8cm, inner sep=0.35cm, minimum width=9.45cm,
+         minimum height=1.9cm, anchor=center]
+      at ([yshift=-3.7cm]current page.north) {%
+        {\usebeamerfont{title}\bfseries\Large\inserttitle\par}%
+        \vspace{0.45cm}%
+        {\normalsize\insertauthor\par}};
+    \node[anchor=center] at ([yshift=1.85cm]current page.south) {\wmlogo};
+  \end{tikzpicture}%
+}
+
+% ---------- Footline: slide number bottom-right in grey ----------
+\setbeamertemplate{footline}{%
+  \hfill\usebeamerfont{page number in head/foot}%
+  \textcolor{gray}{\insertframenumber}\hspace{0.5cm}\vskip0.3cm
+}
+\setbeamerfont{page number in head/foot}{size=\normalsize}
+
+\endinput
