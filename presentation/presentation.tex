@@ -1,6 +1,8 @@
 \documentclass[10pt,aspectratio=169]{beamer}
 \usepackage{wmtheme}
 \usepackage{multicol}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
 
 % Abstract, for reference:
 % There has been much recent work (CuLifter, NVLift) in developing reverse-engineering tooling to lift NVIDIA SASS code to typed LLVM IR. AMD 
@@ -209,20 +211,130 @@ entry:
     \end{multicols}
 	\end{frame}
 
-    \begin{frame}{Optimizations}
+    \begin{frame}[fragile]{Optimizations: Why a CFG?}
+    \hspace*{1.2cm}\begin{minipage}{\dimexpr\textwidth-1.2cm}
+    \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+    \textbf{Linear RDNA (divergent branch)}
+{\scriptsize\begin{verbatim}
+v_cmp_eq_u32  vcc, 0, v1
+s_and_saveexec_b32 s0, vcc
+s_cbranch_execz L_join
+  ; then: v2 = v1 + v1
+L_join:
+s_or_b32 exec, exec, s0
+; else: v2 = v1 * v1
+\end{verbatim}}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+    \centering
+    \begin{tikzpicture}[node distance=0.6cm, every node/.style={draw, rounded corners, font=\scriptsize, inner sep=3pt}]
+        \node (entry) {entry: cmp, save exec};
+        \node[below left=of entry] (then) {then};
+        \node[below right=of entry] (else) {else};
+        \node[below=1.4cm of entry] (join) {join: restore exec};
+        \draw[->] (entry) -- (then);
+        \draw[->] (entry) -- (else);
+        \draw[->] (then) -- (join);
+        \draw[->] (else) -- (join);
+    \end{tikzpicture}
+    \end{column}
+    \end{columns}
+    \vspace{0.5em}
+    {\small\begin{itemize}
+        \item A divergent branch becomes a node with two successors, so the
+          \texttt{exec} save/restore pair can be simplified.
+        \item Dominance and reachability are graph queries, not rescans across jumps.
+        \item Dataflow facts propagate per block and merge at joins. Unreachable
+          blocks are dead. (DCE)
+    \end{itemize}}
+    \end{minipage}
+    \end{frame}
+
+        \begin{frame}[fragile]{Optimizations: Why SSA?}
+    \hspace*{1.2cm}\begin{minipage}{\dimexpr\textwidth-1.2cm}
+    \begin{columns}[T]
+    \begin{column}{0.33\textwidth}
+    \textbf{Non-SSA}
+{\scriptsize\begin{verbatim}
+t = a + b
+...
+t = c + d
+...
+x = t * 2
+\end{verbatim}}
+    {\color{darkgray}\scriptsize Which \texttt{t} reaches \texttt{x}?}
+    \end{column}
+    \begin{column}{0.33\textwidth}
+    \textbf{SSA}
+{\scriptsize\begin{verbatim}
+t1 = a + b
+...
+t2 = c + d
+...
+x = t2 * 2
+\end{verbatim}}
+    {\color{darkgray}\scriptsize One definition per use.}
+    \end{column}
+    \begin{column}{0.33\textwidth}
+    \textbf{At a join}
+{\scriptsize\begin{verbatim}
+then: v2a = v1 + v1
+else: v2b = v1 * v1
+join: v2 = phi(v2a, v2b)
+\end{verbatim}}
+    {\color{darkgray}\scriptsize The phi is where the lane select (\texttt{v\_cndmask}) shows up.}
+    \end{column}
+    \end{columns}
+    \vspace{0.5em}
     \begin{itemize}
-        \item After lifting to LLVM IR, we can run MLIR (Multi-level IR)
-          pipelines, which are language agnostic passes for mid level
-          optimizations (IR to IR), like constant folding, Dead Code
-          elimination, and simplifying exec mask operations.
-        \item Some optimizations, like inlining temps are $O(n^2)$ in a non-SSA
-          language, due to solving dataflow equations. For an SSA language, this
-          is $O(n)$ time.
-        
-        \item Intel has some similar work (IBOT), and other tools like Proteus which analyzes code at runtime
-          and runs "more optimized code", by JITing it.
+        \item Reaching definitions become a direct def-use link. Inlining a temp
+          is a lookup, so $O(n^2)$ naive vs.\ $O(n)$.
+        \item Constant folding and dead code elimination reduce to trivial
+          use lookups.
+        \item Caveat: \texttt{exec} is rewritten many times, so it cannot be SSA-ified naively. Only the data registers get this benefit.
     \end{itemize}
-	\end{frame}
+    \end{minipage}
+    \end{frame}
+
+        \begin{frame}{Optimizations: Why SSA form for RegAlloc?}
+    \hspace*{1.2cm}\begin{minipage}{\dimexpr\textwidth-1.2cm}
+    \tikzset{rn/.style={circle, draw, font=\scriptsize, minimum size=0.75cm, inner sep=0pt}}
+    \begin{columns}[T]
+    \begin{column}{0.45\textwidth}
+    \small
+    \begin{itemize}
+        \item VGPR count limits how many wavefronts fit on a SIMD, so allocation matters.
+        \item An edge $(a,b)$ means $a$ and $b$ are live together and need different registers. Allocation is coloring this graph.
+        \item Non-SSA reuses \texttt{x}: $(x,a),(a,b),(b,c),(c,d),(d,x)$ is an odd cycle, so 3 colors.
+        \item SSA renames to $x_1,x_2$: the cycle opens into a path, so 2 colors. SSA graphs are chordal, so coloring is optimal in $O(V+E)$. General coloring is NP-complete.
+    \end{itemize}
+    \end{column}
+    \begin{column}{0.55\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=1.3]
+        \node[rn, fill=red!30] (x) at (0,1.0) {x};
+        \node[rn, fill=blue!30] (a) at (0.95,0.3) {a};
+        \node[rn, fill=red!30] (b) at (0.6,-0.8) {b};
+        \node[rn, fill=blue!30] (c) at (-0.6,-0.8) {c};
+        \node[rn, fill=green!30] (d) at (-0.95,0.3) {d};
+        \draw (x)--(a)--(b)--(c)--(d)--(x);
+    \end{tikzpicture}\\[0.1em]
+    {\scriptsize Non-SSA: \textbf{3} registers}\\[0.6em]
+    \begin{tikzpicture}[scale=1.5]
+        \node[rn, fill=red!30] (x1) at (0,0) {$x_1$};
+        \node[rn, fill=blue!30] (a) at (0.6,0) {a};
+        \node[rn, fill=red!30] (b) at (1.2,0) {b};
+        \node[rn, fill=blue!30] (c) at (1.8,0) {c};
+        \node[rn, fill=red!30] (d) at (2.4,0) {d};
+        \node[rn, fill=blue!30] (x2) at (3.0,0) {$x_2$};
+        \draw (x1)--(a)--(b)--(c)--(d)--(x2);
+    \end{tikzpicture}\\[0.1em]
+    {\scriptsize SSA: \textbf{2} registers}
+    \end{column}
+    \end{columns}
+    \end{minipage}
+    \end{frame}
 
     \begin{frame}[fragile]{Limitations}
     \begin{itemize}
@@ -262,7 +374,10 @@ extern "C" __global__ void branch(unsigned *output) {
         \begin{itemize}
             \item Ultimately, we were able to reconstruct control-flow from a HIP binary using LLVM IR.
             \item Future work could expand the supported instruction set (which would necessitate architectural changes)
-            \item Discuss control-flow generation for set of N instructions $O(n) -> O(n^3)$
+            \item Lifting is cheap relative to what it unlocks, for $n$ instructions:\\
+                {\color{darkgray} \scriptsize{- CFG construction is $O(n)$: one pass to find block leaders, one to add edges}} \\
+                {\color{darkgray} \scriptsize{- SSA construction is near-linear: dominators in $O(E\,\alpha(E,V))$ with $\alpha$ the inverse Ackermann function (at most 4 in practice), then phi placement and renaming in roughly $O(n)$}} \\
+                {\color{darkgray} \scriptsize{- Both are paid once, and then passes like inlining temps drop from $O(n^2)$ to $O(n)$, and register allocation from NP-complete to $O(V+E)$}} \\
         \end{itemize}
 
 	\end{frame}
