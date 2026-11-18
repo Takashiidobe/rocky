@@ -1,0 +1,5 @@
+function,src,dst,kind
+lifted,entry,entry.then,exec != 0 (lanes take THEN)
+lifted,entry,entry.else,execz (no lane took THEN)
+lifted,entry.then,entry.else,fallthrough
+lifted,entry.else,entry.join,fallthrough

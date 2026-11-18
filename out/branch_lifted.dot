@@ -1,0 +1,14 @@
+digraph "lifted" {
+  rankdir=TB; nodesep=0.6; ranksep=0.6;
+  node [shape=box, style="rounded,filled", fontname="Courier", fontsize=10, fillcolor="#f4f6fa"];
+  edge [fontname="Helvetica", fontsize=9];
+  labelloc=t; label="Control-flow graph: @lifted";
+  "entry" [label="entry   [entry]\l---------------\lv_and_b32 (& 1)\lv_cmp_eq\ls_and_saveexec: s <- exec; exec &= vcc_lo\ls_xor_b32\l(35 IR instructions)\l", fillcolor="#d9ead3"];
+  "entry.then" [label="entry.then   [THEN]\l-------------------\lv_mul_u32_u24\l(14 IR instructions)\l", fillcolor="#fff2cc"];
+  "entry.else" [label="entry.else   [ELSE]\l-------------------\ls_andn2_saveexec: exec = s & ~exec  (else lanes)\lv_lshlrev_b32 (<< 1)\l(21 IR instructions)\l", fillcolor="#fce5cd"];
+  "entry.join" [label="entry.join   [JOIN]\l-------------------\ls_or: exec |= s  (reconverge)\ls_load (scalar memory)\lv_lshlrev_b32 (<< 2)\lglobal_store (masked scatter, active lanes)\lterminator: ret\l(43 IR instructions)\l", fillcolor="#f4cccc"];
+  "entry" -> "entry.then" [label="exec != 0 (lanes take THEN)", color="darkgreen", fontcolor="darkgreen"];
+  "entry" -> "entry.else" [label="execz (no lane took THEN)", color="firebrick", fontcolor="firebrick", style=dashed];
+  "entry.then" -> "entry.else" [label="fallthrough", color="black", fontcolor="black"];
+  "entry.else" -> "entry.join" [label="fallthrough", color="black", fontcolor="black"];
+}

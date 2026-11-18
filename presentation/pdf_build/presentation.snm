@@ -3,4 +3,5 @@
 \beamer@slide {fig:images/cpu_pipeline.png}{3}
 \beamer@slide {fig:images/amd_pipeline.png}{4}
 \beamer@slide {fig:images/design_chart.png}{6}
-\beamer@slide {fig:images/amd_isa.png}{12}
+\beamer@slide {fig:images/branch_lifted.png}{10}
+\beamer@slide {fig:images/amd_isa.png}{13}

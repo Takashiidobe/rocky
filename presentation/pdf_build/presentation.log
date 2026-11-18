@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.10.29)  18 NOV 2026 13:13
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026/Arch Linux) (preloaded format=pdflatex 2026.10.29)  18 NOV 2026 14:33
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -988,26 +988,35 @@ Overfull \hbox (0.30641pt too wide) in paragraph at lines 37--37
 
 ) [9
 
-] [10
+]
+<images/branch_lifted.png, id=81, 418.56375pt x 659.46375pt>
+File: images/branch_lifted.png Graphic file (type png)
+<use images/branch_lifted.png>
+Package pdftex.def Info: images/branch_lifted.png  used on input line 210.
+(pdftex.def)             Requested size: 92.81668pt x 146.2296pt.
+ [10
+
+ <./images/branch_lifted.png>] [11
 
 ]
 \openout4 = `presentation.vrb'.
 
- (pdf_build/presentation.vrb) [11
-
-]
-<images/amd_isa.png, id=91, 863.225pt x 545.03625pt>
-File: images/amd_isa.png Graphic file (type png)
-<use images/amd_isa.png>
-Package pdftex.def Info: images/amd_isa.png  used on input line 239.
-(pdftex.def)             Requested size: 144.50447pt x 91.2328pt.
-
-Overfull \vbox (5.3391pt too high) detected at line 239
- []
-
+ (pdf_build/presentation.vrb)
 [12
 
- <./images/amd_isa.png (PNG copy)>] [13
+]
+<images/amd_isa.png, id=101, 863.225pt x 545.03625pt>
+File: images/amd_isa.png Graphic file (type png)
+<use images/amd_isa.png>
+Package pdftex.def Info: images/amd_isa.png  used on input line 259.
+(pdftex.def)             Requested size: 144.50447pt x 91.2328pt.
+
+Overfull \vbox (5.3391pt too high) detected at line 259
+ []
+
+[13
+
+ <./images/amd_isa.png (PNG copy)>] [14
 
 ]
 \tf@nav=\write6
@@ -1028,23 +1037,26 @@ Package rerunfilecheck Info: File `presentation.out' has not changed.
 (rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
  ) 
 Here is how much of TeX's memory you used:
- 24668 strings out of 469515
- 482402 string characters out of 5470806
- 869657 words of memory out of 5000000
- 52818 multiletter control sequences out of 15000+600000
+ 24690 strings out of 469515
+ 482951 string characters out of 5470806
+ 869701 words of memory out of 5000000
+ 52837 multiletter control sequences out of 15000+600000
  632162 words of font info for 58 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  101i,11n,107p,407b,848s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmss10.pfb></usr/share/
-texmf-dist/fonts/type1/public/amsfonts/cm/cmss8.pfb></usr/share/texmf-dist/font
-s/type1/public/amsfonts/cm/cmss9.pfb></usr/share/texmf-dist/fonts/type1/public/
-amsfonts/cm/cmssbx10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/
-cmtt10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt8.pfb></us
-r/share/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb>
-Output written on pdf_build/presentation.pdf (13 pages, 991281 bytes).
+</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/
+texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-dist/font
+s/type1/public/amsfonts/cm/cmr7.pfb></usr/share/texmf-dist/fonts/type1/public/a
+msfonts/cm/cmss10.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cms
+s8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmss9.pfb></usr/sh
+are/texmf-dist/fonts/type1/public/amsfonts/cm/cmssbx10.pfb></usr/share/texmf-di
+st/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/share/texmf-dist/fonts/type1
+/public/amsfonts/cm/cmtt8.pfb></usr/share/texmf-dist/fonts/type1/public/amsfont
+s/symbols/msam10.pfb>
+Output written on pdf_build/presentation.pdf (14 pages, 1032576 bytes).
 PDF statistics:
- 143 PDF objects out of 1000 (max. 8388607)
- 98 compressed objects within 1 object stream
- 33 named destinations out of 1000 (max. 500000)
- 78 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 166 PDF objects out of 1000 (max. 8388607)
+ 112 compressed objects within 2 object streams
+ 36 named destinations out of 1000 (max. 500000)
+ 83 words of extra memory for PDF output out of 10000 (max. 10000000)
 

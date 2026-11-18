@@ -193,15 +193,20 @@ entry:
 	\end{frame}
 
     \begin{frame}{Discussion}
+    \begin{multicols}{2}
     \begin{itemize}
         \item For a set of n instructions, making the control-flow graph is an O(n) problem in the average case.
-        
-            * insert image of control flow graph once generated * 
-
         \item This work can be expanded (with architectural changes) to represent all of the RDNA4 ISA which would be a novel contribution. \\ 
             {\color{darkgray} \scriptsize{- Similar projects exist for CUDA (CUlift), but there is minimal tooling for AMD hardware.}} \\
             {\color{darkgray} \scriptsize{- If this work is completed, this would be a significant step towards creating cross-platform tooling for GPU code.}} \\
     \end{itemize}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.5\linewidth]{images/branch_lifted.png}
+        \label{fig:images/branch_lifted.png}
+    \end{figure}            
+    \end{multicols}
 	\end{frame}
 
     \begin{frame}{Optimizations}
@@ -257,7 +262,7 @@ extern "C" __global__ void branch(unsigned *output) {
         \begin{itemize}
             \item Ultimately, we were able to reconstruct control-flow from a HIP binary using LLVM IR.
             \item Future work could expand the supported instruction set (which would necessitate architectural changes)
-            \item I'd like a point about analysis of algo here but i'm not sure yet how to.
+            \item Discuss control-flow generation for set of N instructions $O(n) -> O(n^3)$
         \end{itemize}
 
 	\end{frame}

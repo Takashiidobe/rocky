@@ -1,0 +1,5 @@
+function,block,role,orig_llvm_block,n_ir_instructions,terminator,successors,predecessors,operations,n_loads,n_stores,n_calls
+lifted,entry,entry,entry,35,,entry.then;entry.else,,v_and_b32 (& 1) | v_cmp_eq | s_and_saveexec: s <- exec; exec &= vcc_lo | s_xor_b32,9,7,0
+lifted,entry.then,THEN,entry,14,,entry.else,entry,v_mul_u32_u24,4,1,0
+lifted,entry.else,ELSE,entry,21,,entry.join,entry;entry.then,s_andn2_saveexec: exec = s & ~exec  (else lanes) | v_lshlrev_b32 (<< 1),5,4,0
+lifted,entry.join,JOIN,entry,43,ret,,entry.else,"s_or: exec |= s  (reconverge) | s_load (scalar memory) | v_lshlrev_b32 (<< 2) | global_store (masked scatter, active lanes)",12,4,1
