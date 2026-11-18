@@ -51,6 +51,7 @@ pub enum Instruction {
         dest: ScalarRegister<B32>,
     },
     SXorB32 {
+        dest: ScalarRegisterOperand<B32>,
         lhs: ScalarSource<B32>,
         rhs: ScalarSource<B32>,
     },
@@ -150,6 +151,7 @@ fn parse_instruction(line: &Span<InstructionLine>) -> Result<Span<Instruction>, 
         }
         DecodedInstruction::SXorB32(instruction) => Ok(Span {
             value: Instruction::SXorB32 {
+                dest: instruction.destination(),
                 lhs: instruction.src0().into(),
                 rhs: instruction.src1().into(),
             },
