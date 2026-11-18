@@ -204,6 +204,21 @@ entry:
     \end{itemize}
 	\end{frame}
 
+    \begin{frame}{Optimizations}
+    \begin{itemize}
+        \item After lifting to LLVM IR, we can run MLIR (Multi-level IR)
+          pipelines, which are language agnostic passes for mid level
+          optimizations (IR to IR), like constant folding, Dead Code
+          elimination, and simplifying exec mask operations.
+        \item Some optimizations, like inlining temps are $O(n^2)$ in a non-SSA
+          language, due to solving dataflow equations. For an SSA language, this
+          is $O(n)$ time.
+        
+        \item Intel has some similar work (IBOT), and other tools like Proteus which analyzes code at runtime
+          and runs "more optimized code", by JITing it.
+    \end{itemize}
+	\end{frame}
+
     \begin{frame}[fragile]{Limitations}
     \begin{itemize}
         \item The test case we used is fairly limted and may not be representative of more complex control-flow structures\\
