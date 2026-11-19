@@ -288,10 +288,9 @@ join: v2 = phi(v2a, v2b)
     \end{columns}
     \vspace{0.5em}
     \begin{itemize}
-        \item Reaching definitions become a direct def-use link. Inlining a temp
-          is a lookup, so $O(n^2)$ naive vs.\ $O(n)$.
-        \item Constant folding and dead code elimination reduce to trivial
-          use lookups.
+        \item Reaching definitions become a direct def-use link. 
+        \item Optimizations like Constant folding and Dead Code Elimination reduce to trivial
+          use lookups, so they run in $O(n)$ instead of $O(n^2)$ time.
         \item Caveat: \texttt{exec} is rewritten many times, so it cannot be SSA-ified naively. Only the data registers get this benefit.
     \end{itemize}
     \end{minipage}
